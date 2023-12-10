@@ -57,7 +57,7 @@ class December4 : Solution() {
         var countOfCards = 0
         while (!deck.isEmpty()) {
             val card = deck.removeFirst()
-            countOfCards += 1
+                .also { countOfCards += 1 }
             for (copyNumber in card.number + 1..card.number + card.value) {
                 deck.addLast(cardByNumber[copyNumber]!!)
             }
