@@ -8,15 +8,12 @@ private const val GEAR = '*'
 class December3 : Solution() {
 
     private class Grid(
-        list: List<String>,
-        val rows: Int = list.size,
-        val columns: Int = list.getOrNull(0)?.length ?: 0
+        list: List<String>
     ) : ArrayList<String>(list) {
-        fun safeGet(row: Int, column: Int) = getOrNull(row)?.getOrNull(column) ?: EMPTY
         fun safeGet(position: Position) = getOrNull(position.row)?.getOrNull(position.column) ?: EMPTY
     }
 
-    private fun parseToGrid(lines: List<String>) = Grid(lines)
+    private data class Number(val row: Int, val columnsRange: IntRange, val value: Int)
 
     private data class Position(val row: Int, val column: Int) {
         val up get() = Position(row - 1, column)
@@ -24,6 +21,8 @@ class December3 : Solution() {
         val right get() = Position(row, column + 1)
         val left get() = Position(row, column - 1)
     }
+
+    private fun parseToGrid(lines: List<String>) = Grid(lines)
 
     private fun isSymbol(char: Char) = char != EMPTY
 
@@ -49,15 +48,21 @@ class December3 : Solution() {
         return positionsToCheck
     }
 
+    private fun isAdjacentToSymbol(grid: Grid, row: Int, columnsRange: IntRange) =
+        getPositionsToCheck(row, columnsRange)
+            .any { position -> isSymbol(grid.safeGet(position)) }
+
+    private fun findAllNumbers(grid: Grid) = grid.flatMapIndexed { rowIndex, rowText ->
+        Regex("\\d+").findAll(rowText)
+            .map { matchResult -> Number(rowIndex, matchResult.range, matchResult.value.toInt()) }
+    }
+
     override fun first() {
         val grid = parseToGrid(readLines("third.txt"))
-        grid.mapIndexed { row, rowText ->
-            Regex("\\d+").findAll(rowText)
-                .filter { matchResult ->
-                    getPositionsToCheck(row, matchResult.range)
-                        .any { position -> isSymbol(grid.safeGet(position)) }
-                }.sumOf { matchResult -> matchResult.value.toInt() }
-        }.sum().also(::println)
+        findAllNumbers(grid)
+            .filter { num -> isAdjacentToSymbol(grid, num.row, num.columnsRange) }
+            .sumOf { num -> num.value }
+            .also(::println)
     }
 
     private data class Gear(val ratio: Int, val adjacent: Int)
@@ -65,16 +70,19 @@ class December3 : Solution() {
     private fun isGear(char: Char) = char == GEAR
 
     override fun second() {
-        val grid = parseToGrid(readLines("third.txt"))
-        val knownGears = mutableMapOf<Position, Gear>()
-        grid.mapIndexed { row, rowText ->
-            Regex("\\d+").findAll(rowText)
-                .filter { matchResult ->
-                    getPositionsToCheck(row, matchResult.range)
-                        .forEach { position ->
-                            if ()
-                        }
-                }.sumOf { matchResult -> matchResult.value.toInt() }
-        }.sum().also(::println)
+        // val grid = parseToGrid(readLines("third.txt"))
+        // val knownGears = mutableMapOf<Position, Gear>()
+        // grid.forEachIndexed { row, rowText ->
+        //     findAllNumbers(rowText)
+        //         .forEach { matchResult ->
+        //             getPositionsToCheck(row, matchResult.range)
+        //                 .forEach { position ->
+        //                     if (isGear(grid.safeGet(position))) {
+        //                         val number = matchResult.value.toInt()
+        //                         knownGears.merge(position, Gear(1, ))
+        //                     }
+        //                 }
+        //         }
+        // }
     }
 }
