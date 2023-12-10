@@ -53,6 +53,7 @@ class December4 : Solution() {
             .map(this::parseCard)
             .map { valueCard(it, secondPuzzleCardEvaluator) }
             .associateBy { it.number }
+        // todo: try to rewrite with fold
         val deck = ArrayDeque(cardByNumber.values)
         var countOfCards = 0
         while (!deck.isEmpty()) {
