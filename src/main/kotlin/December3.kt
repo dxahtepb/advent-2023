@@ -30,16 +30,20 @@ class December3 : Solution() {
         val leftColumn = columnsRange.first
         val rightColumn = columnsRange.last
         val positionsToCheck = mutableListOf<Position>()
-        positionsToCheck.addAll(listOf(
-            Position(row, leftColumn).up.left,
-            Position(row, leftColumn).left,
-            Position(row, leftColumn).down.left,
-        ))
-        positionsToCheck.addAll(listOf(
-            Position(row, rightColumn).up.right,
-            Position(row, rightColumn).right,
-            Position(row, rightColumn).down.right
-        ))
+        positionsToCheck.addAll(
+            listOf(
+                Position(row, leftColumn).up.left,
+                Position(row, leftColumn).left,
+                Position(row, leftColumn).down.left,
+            )
+        )
+        positionsToCheck.addAll(
+            listOf(
+                Position(row, rightColumn).up.right,
+                Position(row, rightColumn).right,
+                Position(row, rightColumn).down.right
+            )
+        )
         columnsRange
             .forEach {
                 positionsToCheck.add(Position(row, it).up)
@@ -65,24 +69,31 @@ class December3 : Solution() {
             .also(::println)
     }
 
-    private data class Gear(val ratio: Int, val adjacent: Int)
+    private data class Gear(val ratio: Int, val adjacent: Int) {
+        fun mergeWith(otherGear: Gear) = Gear(
+            ratio * otherGear.ratio,
+            adjacent + otherGear.adjacent
+        )
+    }
 
     private fun isGear(char: Char) = char == GEAR
 
     override fun second() {
-        // val grid = parseToGrid(readLines("third.txt"))
-        // val knownGears = mutableMapOf<Position, Gear>()
-        // grid.forEachIndexed { row, rowText ->
-        //     findAllNumbers(rowText)
-        //         .forEach { matchResult ->
-        //             getPositionsToCheck(row, matchResult.range)
-        //                 .forEach { position ->
-        //                     if (isGear(grid.safeGet(position))) {
-        //                         val number = matchResult.value.toInt()
-        //                         knownGears.merge(position, Gear(1, ))
-        //                     }
-        //                 }
-        //         }
-        // }
+        val grid = parseToGrid(readLines("third.txt"))
+        val knownGears = mutableMapOf<Position, Gear>()
+        findAllNumbers(grid).forEach { number ->
+            getPositionsToCheck(number.row, number.columnsRange)
+                .forEach { position ->
+                    if (isGear(grid.safeGet(position))) {
+                        knownGears.merge(position, Gear(number.value, 1)) { oldGear, newGear ->
+                            oldGear.mergeWith(newGear)
+                        }
+                    }
+                }
+        }
+        knownGears.values
+            .filter { gear -> gear.adjacent == 2 }
+            .sumOf { gear -> gear.ratio }
+            .also(::println)
     }
 }
