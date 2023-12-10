@@ -78,20 +78,22 @@ class December3 : Solution() {
 
     private fun isGear(char: Char) = char == GEAR
 
+    private fun mergeGears(positionToGear: List<Pair<Position, Gear>>): Map<Position, Gear> {
+        val mergedGears = mutableMapOf<Position, Gear>()
+        positionToGear.forEach { (position, gear) ->
+            mergedGears.merge(position, gear, Gear::mergeWith)
+        }
+        return mergedGears
+    }
+
     override fun second() {
         val grid = parseToGrid(readLines("third.txt"))
-        val knownGears = mutableMapOf<Position, Gear>()
-        findAllNumbers(grid).forEach { number ->
+        val positionToGear = findAllNumbers(grid).flatMap { number ->
             getPositionsToCheck(number.row, number.columnsRange)
-                .forEach { position ->
-                    if (isGear(grid.safeGet(position))) {
-                        knownGears.merge(position, Gear(number.value, 1)) { oldGear, newGear ->
-                            oldGear.mergeWith(newGear)
-                        }
-                    }
-                }
+                .filter { position -> isGear(grid.safeGet(position)) }
+                .map { it to Gear(number.value, 1) }
         }
-        knownGears.values
+        mergeGears(positionToGear).values
             .filter { gear -> gear.adjacent == 2 }
             .sumOf { gear -> gear.ratio }
             .also(::println)
