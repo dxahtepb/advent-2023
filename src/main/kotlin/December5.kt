@@ -1,5 +1,3 @@
-import kotlin.math.tan
-
 fun main() {
     testCut()
     December5().run()
