@@ -5,13 +5,14 @@ fun main() {
 class December7 : Solution() {
 
     companion object {
-        private const val CARDS = "AKQJT98765432J"
+        private const val CARDS = "AKQT98765432J"
     }
 
     private data class Hand(val hand: String, val bid: Int)
     private data class Tester(val name: String, private val test: (Map<Char, Int>) -> Boolean) {
         fun test(value: Map<Char, Int>) = test.invoke(value)
     }
+
     private data class TesterWithPriority(val tester: Tester, val priority: Int)
 
     private val testers = listOf(
@@ -24,19 +25,31 @@ class December7 : Solution() {
         Tester("High card") { _ -> true },
     ).mapIndexed { index, tester -> TesterWithPriority(tester, index) }
 
-    private val testersWithJokers = listOf(
-        Tester("Five of a kind") { countCards -> countCards.size == 1 },
-        Tester("Four of a kind") { countCards -> countCards.values.sorted() == listOf(1, 4) },
-        Tester("Full house") { countCards -> countCards.values.sorted() == listOf(2, 3) },
-        Tester("Three of a kind") { countCards -> countCards.values.sorted() == listOf(1, 1, 3) },
-        Tester("Two pair") { countCards -> countCards.values.sorted() == listOf(1, 2, 2) },
-        Tester("One pair") { countCards -> countCards.values.sorted() == listOf(1, 1, 1, 2) },
-        Tester("High card") { _ -> true },
-    ).mapIndexed { index, tester -> TesterWithPriority(tester, index) }
-
-    private fun getPriority(testerList: List<TesterWithPriority>, hand: String): Int {
+    private fun getPriority(hand: String): Int {
         val countCards = hand.groupingBy { it }.eachCount()
-        return testerList.first { it.tester.test(countCards) }.priority
+        return testers.first { it.tester.test(countCards) }.priority
+    }
+
+    private fun getPriorityWithJokers(hand: String): Int {
+        val deque = ArrayDeque<String>()
+        val knownPrioritiesCache = mutableMapOf<String, Int>()
+        var leastPriority = Int.MAX_VALUE
+        deque.addLast(hand)
+        while (!deque.isEmpty()) {
+            val currentHand = deque.removeFirst()
+            if (currentHand.contains('J')) {
+                for (ch in CARDS.dropLast(1)) {
+                    deque.addFirst(currentHand.replaceFirst('J', ch))
+                }
+            } else {
+                val handdPriority = knownPrioritiesCache.computeIfAbsent(currentHand) {
+                    val countCards = currentHand.groupingBy { it }.eachCount()
+                    testers.first { it.tester.test(countCards) }.priority
+                }
+                if (handdPriority < leastPriority) leastPriority = handdPriority
+            }
+        }
+        return leastPriority
     }
 
     private fun tiebreaker(left: Hand, right: Hand): Int {
@@ -48,9 +61,9 @@ class December7 : Solution() {
             .compare(left.hand.map { CARDS.indexOf(it) }, right.hand.map { CARDS.indexOf(it) })
     }
 
-    private fun getCompareHandsFunctionWithTesters(testerList: List<TesterWithPriority>): (Hand, Hand) -> Int {
+    private fun getCompareHandsFunctionWithPriorityFunction(priorityFunction: (String) -> Int): (Hand, Hand) -> Int {
         return { left, right ->
-            val priorityResult = getPriority(testerList, left.hand).compareTo(getPriority(testerList, right.hand))
+            val priorityResult = priorityFunction(left.hand).compareTo(priorityFunction(right.hand))
             if (priorityResult != 0) priorityResult
             else tiebreaker(left, right)
         }
@@ -61,19 +74,17 @@ class December7 : Solution() {
         return Hand(hand, bid.toInt())
     }
 
-    private fun countTotalWinningsWithRules(lines: List<String>, testerList: List<TesterWithPriority>) {
+    private fun countTotalWinningsWithRules(lines: List<String>, priorityFunction: (String) -> Int) =
         lines.map { parseHand(it) }
-            .sortedWith(getCompareHandsFunctionWithTesters(testerList))
+            .sortedWith(getCompareHandsFunctionWithPriorityFunction(priorityFunction))
             .reversed()
             .foldIndexed(0L) { index, acc, hand -> acc + ((index + 1) * hand.bid) }
-            .also { println(it) }
-    }
 
     override fun first() {
-        println(countTotalWinningsWithRules(readLines("seventh.txt"), testers))
+        println(countTotalWinningsWithRules(readLines("seventh.txt"), ::getPriority))
     }
 
     override fun second() {
-        println(countTotalWinningsWithRules(readLines("seventh.txt"), testersWithJokers))
+        println(countTotalWinningsWithRules(readLines("seventh.txt"), ::getPriorityWithJokers))
     }
 }
